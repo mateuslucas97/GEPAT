@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Dashboard</h1>
+        <p>Bem-vindo, {{ current_user.nome_completo }}!</p>
+
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Patrimonios</h5>
+                        <h2 class="card-text">{{ patrimonios|length }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title">Disponivel</h5>
+                        <h2 class="card-text">
+                            {% set count = 0 %}
+                            {% for p in patrimonios %}
+                                {% if p[3] == 'disponivel' %}
+                                    {% set count = count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ count }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">Em Uso</h5>
+                        <h2 class="card-text">
+                            {% set count = 0 %}
+                            {% for p in patrimonios %}
+                                {% if p[3] == 'em uso' %}
+                                    {% set count = count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ count }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-secondary">
+                    <div class="card-body">
+                        <h5 class="card-title">Outros</h5>
+                        <h2 class="card-text">
+                            {% set count = 0 %}
+                            {% for p in patrimonios %}
+                                {% if p[3] not in ['disponivel', 'em uso'] %}
+                                    {% set count = count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ count }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h3>Patrimonios Recentes</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Numero</th>
+                            <th>Descricao</th>
+                            <th>Status</th>
+                            <th>Localizacao</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patrimonio in patrimonios[:5] %}
+                        <tr>
+                            <td>{{ patrimonio[1] }}</td>
+                            <td>{{ patrimonio[2] }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if patrimonio[3] == 'disponivel' else 'warning' if patrimonio[3] == 'em uso' else 'secondary' }}">
+                                    {{ patrimonio[3] }}
+                                </span>
+                            </td>
+                            <td>{{ patrimonio[4] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

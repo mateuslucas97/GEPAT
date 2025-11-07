@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Comparação com Planilha da Diretoria</h1>
+            <a href="/patrimonios" class="btn btn-outline-primary">
+                Voltar para Patrimonios
+            </a>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Instruções:</strong> Faça o upload da planilha enviada pela Diretoria de Rede Física e Patrimônios 
+            para comparar com os patrimônios cadastrados no GEPAT.
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Upload da Planilha</h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="planilha" class="form-label">Selecione a planilha (Excel)</label>
+                        <input class="form-control" type="file" id="planilha" name="planilha" accept=".xlsx,.xls" required>
+                        <div class="form-text">
+                            A planilha deve conter pelo menos a coluna "numero_patrimonio". 
+                            Colunas opcionais: "descricao", "localizacao".
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="btnUpload">
+                        Processar Planilha
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Resultado da Comparação</h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="limparComparacao()">
+                    Limpar Comparação
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="resultadoContainer" style="display: none;">
+                    <!-- Resultado será inserido aqui via JavaScript -->
+                </div>
+                <div id="vazioContainer" class="text-center text-muted py-4">
+                    <p>Faça o upload de uma planilha para ver o resultado da comparação.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('planilha');
+    const formData = new FormData();
+    formData.append('planilha', fileInput.files[0]);
+    
+    const btnUpload = document.getElementById('btnUpload');
+    btnUpload.disabled = true;
+    btnUpload.textContent = 'Processando...';
+    
+    fetch('/api/comparacao/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Planilha processada com sucesso!');
+            carregarResultado();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao processar planilha');
+    })
+    .finally(() => {
+        btnUpload.disabled = false;
+        btnUpload.textContent = 'Processar Planilha';
+        fileInput.value = '';
+    });
+});
+
+function carregarResultado() {
+    fetch('/api/comparacao/resultado')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.resultado) {
+            exibirResultado(data.resultado);
+        } else {
+            document.getElementById('vazioContainer').style.display = 'block';
+            document.getElementById('resultadoContainer').style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao carregar resultado');
+    });
+}
+
+function exibirResultado(resultado) {
+    const container = document.getElementById('resultadoContainer');
+    const vazioContainer = document.getElementById('vazioContainer');
+    
+    let html = `
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white ${resultado.conformidade ? 'bg-success' : 'bg-warning'}">
+                    <div class="card-body text-center">
+                        <h6>Status</h6>
+                        <h4>${resultado.conformidade ? 'CONFORME' : 'NÃO CONFORME'}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <h6>Planilha</h6>
+                        <h4>${resultado.total_planilha}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body text-center">
+                        <h6>GEPAT</h6>
+                        <h4>${resultado.total_gepat}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h6>Comuns</h6>
+                        <h4>${resultado.comuns}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Patrimônios na planilha mas não no GEPAT
+    if (resultado.nao_encontrados_gepat.length > 0) {
+        html += `
+            <div class="alert alert-warning">
+                <h6>⚠️ Patrimônios na PLANILHA mas NÃO no GEPAT: ${resultado.nao_encontrados_gepat.length}</h6>
+                <small>Estes patrimônios constam na planilha da Diretoria mas não estão cadastrados no GEPAT.</small>
+            </div>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Número Patrimônio</th>
+                            <th>Descrição</th>
+                            <th>Localização (Planilha)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        resultado.nao_encontrados_gepat.forEach(patrimonio => {
+            html += `
+                <tr>
+                    <td>${patrimonio.numero_patrimonio}</td>
+                    <td>${patrimonio.descricao || '-'}</td>
+                    <td>${patrimonio.localizacao_planilha || '-'}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // Patrimônios no GEPAT mas não na planilha
+    if (resultado.nao_encontrados_planilha.length > 0) {
+        html += `
+            <div class="alert alert-danger">
+                <h6>❌ Patrimônios no GEPAT mas NÃO na PLANILHA: ${resultado.nao_encontrados_planilha.length}</h6>
+                <small>Estes patrimônios estão cadastrados no GEPAT mas não constam na planilha da Diretoria.</small>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Número Patrimônio</th>
+                            <th>Descrição</th>
+                            <th>Localização Atual</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        resultado.nao_encontrados_planilha.forEach(patrimonio => {
+            html += `
+                <tr>
+                    <td>${patrimonio.numero_patrimonio}</td>
+                    <td>${patrimonio.descricao || '-'}</td>
+                    <td>${patrimonio.localizacao_atual || '-'}</td>
+                    <td><span class="badge bg-secondary">${patrimonio.status}</span></td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // Se está tudo conforme
+    if (resultado.conformidade) {
+        html += `
+            <div class="alert alert-success text-center">
+                <h4>✅ CONFORMIDADE TOTAL</h4>
+                <p>Todos os patrimônios da planilha estão cadastrados no GEPAT e vice-versa.</p>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+    container.style.display = 'block';
+    vazioContainer.style.display = 'none';
+}
+
+function limparComparacao() {
+    if (confirm('Tem certeza que deseja limpar os dados da comparação?')) {
+        fetch('/api/comparacao/limpar', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Dados limpos com sucesso!');
+                document.getElementById('vazioContainer').style.display = 'block';
+                document.getElementById('resultadoContainer').style.display = 'none';
+            } else {
+                alert('Erro ao limpar dados: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao limpar dados');
+        });
+    }
+}
+
+// Carregar resultado ao abrir a página (se existir)
+document.addEventListener('DOMContentLoaded', function() {
+    carregarResultado();
+});
+</script>
+{% endblock %}

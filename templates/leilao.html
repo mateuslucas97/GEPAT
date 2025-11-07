@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Patrimonios para Leilão</h1>
+            <div>
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#modalCadastroLeilao">
+                    ➕ Cadastrar Direto
+                </button>
+                <a href="/patrimonios" class="btn btn-outline-primary">
+                    Voltar para Patrimonios
+                </a>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Informação:</strong> Estes são patrimônios que serão descartados para outros órgãos do estado.
+        </div>
+
+        {% if leilao_patrimonios %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Numero Patrimonio</th>
+                        <th>Descricao</th>
+                        <th>Estado</th>
+                        <th>Motivo Descarte</th>
+                        <th>Data Entrada</th>
+                        <th>Usuario</th>
+                        <th>Observacoes</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patrimonio in leilao_patrimonios %}
+                    <tr>
+                        <td>{{ patrimonio[2] }}</td>
+                        <td>{{ patrimonio[3] }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if patrimonio[4] == 'em boas condições' else 'warning' if patrimonio[4] == 'obsoleto' else 'danger' if patrimonio[4] == 'com defeito' else 'secondary' }}">
+                                {{ patrimonio[4] }}
+                            </span>
+                        </td>
+                        <td>{{ patrimonio[5] or '-' }}</td>
+                        <td>{{ patrimonio[6].strftime('%d/%m/%Y') if patrimonio[6] }}</td>
+                        <td>{{ patrimonio[9] or '-' }}</td>
+                        <td>{{ patrimonio[8] or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="retornarParaPatrimonios({{ patrimonio[0] }})">
+                                Retornar
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deletarDoLeilao({{ patrimonio[0] }})">
+                                Remover
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            Nenhum patrimonio encontrado na lista de leilão.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para cadastrar direto no leilão -->
+<div class="modal fade" id="modalCadastroLeilao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cadastrar Patrimônio no Leilão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCadastroLeilao">
+                    <div class="mb-3">
+                        <label class="form-label">Número do Patrimônio *</label>
+                        <input type="text" class="form-control" id="numeroPatrimonioLeilao" required>
+                        <div class="form-text">
+                            Se o patrimônio já existir na lista comum, ele será automaticamente transferido.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição *</label>
+                        <textarea class="form-control" id="descricaoLeilao" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado do Patrimônio *</label>
+                        <select class="form-select" id="estadoLeilao" required>
+                            <option value="">Selecione o estado</option>
+                            <option value="em boas condições">Em boas condições</option>
+                            <option value="obsoleto">Obsoleto</option>
+                            <option value="com defeito">Com defeito</option>
+                            <option value="desatualizado">Desatualizado</option>
+                            <option value="danificado">Danificado</option>
+                            <option value="irrecuperável">Irrecuperável</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo do Descarte *</label>
+                        <textarea class="form-control" id="motivoDescarteLeilao" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" id="observacoesLeilao" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="cadastrarDiretoLeilao()">Cadastrar no Leilão</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function cadastrarDiretoLeilao() {
+    const formData = {
+        numero_patrimonio: document.getElementById('numeroPatrimonioLeilao').value,
+        descricao: document.getElementById('descricaoLeilao').value,
+        estado: document.getElementById('estadoLeilao').value,
+        motivo_descarte: document.getElementById('motivoDescarteLeilao').value,
+        observacoes: document.getElementById('observacoesLeilao').value
+    };
+
+    // Validar campos obrigatórios
+    if (!formData.numero_patrimonio || !formData.descricao || !formData.estado || !formData.motivo_descarte) {
+        alert('Preencha todos os campos obrigatórios (*)');
+        return;
+    }
+
+    fetch('/api/leilao/cadastrar-direto', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Fechar o modal e recarregar a página
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCadastroLeilao'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao cadastrar no leilão');
+    });
+}
+
+function retornarParaPatrimonios(leilaoId) {
+    if (confirm('Tem certeza que deseja retornar este patrimonio para a lista comum?')) {
+        fetch(`/api/leilao/${leilaoId}/retornar`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao retornar patrimonio');
+        });
+    }
+}
+
+function deletarDoLeilao(leilaoId) {
+    if (confirm('Tem certeza que deseja remover permanentemente este patrimonio do leilão?')) {
+        fetch(`/api/leilao/${leilaoId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao remover patrimonio');
+        });
+    }
+}
+
+// Limpar formulário quando modal fechar
+document.getElementById('modalCadastroLeilao').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('formCadastroLeilao').reset();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gestao de Usuarios</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+                Novo Usuario
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Nome Completo</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Data Criacao</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario[0] }}</td>
+                        <td>{{ usuario[1] }}</td>
+                        <td>{{ usuario[2] }}</td>
+                        <td>{{ usuario[3] or '-' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if usuario[4] else 'secondary' }}">
+                                {{ 'Ativo' if usuario[4] else 'Inativo' }}
+                            </span>
+                        </td>
+                        <td>{{ usuario[5].strftime('%d/%m/%Y') if usuario[5] }}</td>
+                        <td>
+                            {% if usuario[0] != current_user.id %}
+                            <button class="btn btn-sm btn-{{ 'warning' if usuario[4] else 'success' }}" 
+                                    onclick="toggleUsuarioStatus({{ usuario[0] }}, {{ usuario[4] | lower }})">
+                                {{ 'Desativar' if usuario[4] else 'Ativar' }}
+                            </button>
+                            {% else %}
+                            <span class="text-muted">Usuario atual</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formUsuario">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario *</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Senha *</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nome Completo *</label>
+                        <input type="text" class="form-control" id="nome_completo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarUsuario()">Criar Usuario</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function salvarUsuario() {
+    const formData = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        nome_completo: document.getElementById('nome_completo').value,
+        email: document.getElementById('email').value
+    };
+
+    // Validar campos obrigatórios
+    if (!formData.username || !formData.password || !formData.nome_completo) {
+        alert('Preencha todos os campos obrigatorios (*)');
+        return;
+    }
+
+    fetch('/api/usuarios', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Fechar o modal e recarregar a página
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalUsuario'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao criar usuario');
+    });
+}
+
+function toggleUsuarioStatus(userId, estaAtivo) {
+    const acao = estaAtivo ? 'desativar' : 'ativar';
+    
+    if (confirm(`Tem certeza que deseja ${acao} este usuario?`)) {
+        fetch(`/api/usuarios/${userId}/toggle`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao alterar status do usuario');
+        });
+    }
+}
+
+// Limpar formulário quando modal fechar
+document.getElementById('modalUsuario').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('formUsuario').reset();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Historico de Movimentacoes</h1>
+        
+        {% if historico %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Patrimonio</th>
+                        <th>Descricao</th>
+                        <th>Localizacao Anterior</th>
+                        <th>Localizacao Nova</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mov in historico %}
+                    <tr>
+                        <td>{{ mov[7] }}</td>  <!-- numero_patrimonio -->
+                        <td>{{ mov[8] }}</td>  <!-- descricao -->
+                        <td>{{ mov[2] or 'N/A' }}</td>  <!-- localizacao_anterior -->
+                        <td>{{ mov[3] }}</td>  <!-- localizacao_nova -->
+                        <td>
+                            {% if mov[4] %}
+                                {{ mov[4].strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            Nenhuma movimentacao registrada no historico.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

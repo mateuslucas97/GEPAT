@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gestao de Patrimonios</h1>
+            <div>
+                <a href="/leilao" class="btn btn-warning me-2">
+                    Ver Leilão
+                </a>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPatrimonio" onclick="novoPatrimonio()">
+                    Novo Patrimonio
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Numero Patrimonio</th>
+                        <th>Descricao</th>
+                        <th>Status</th>
+                        <th>Localizacao</th>
+                        <th>Data Cadastro</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patrimonio in patrimonios %}
+                    <tr>
+                        <td>{{ patrimonio[1] }}</td>
+                        <td>{{ patrimonio[2] }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if patrimonio[3] == 'disponivel' else 'warning' if patrimonio[3] == 'em uso' else 'secondary' if patrimonio[3] == 'manutencao' else 'danger' }}">
+                                {{ patrimonio[3] }}
+                            </span>
+                        </td>
+                        <td>{{ patrimonio[4] }}</td>
+                        <td>{{ patrimonio[5].strftime('%d/%m/%Y') if patrimonio[5] }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editarPatrimonio({{ patrimonio[0] }})">
+                                Editar
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="transferirLeilao({{ patrimonio[0] }})">
+                                Leilão
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deletarPatrimonio({{ patrimonio[0] }})">
+                                Excluir
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar/editar patrimonio -->
+<div class="modal fade" id="modalPatrimonio" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Novo Patrimonio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPatrimonio">
+                    <input type="hidden" id="patrimonioId">
+                    <div class="mb-3">
+                        <label class="form-label">Numero do Patrimonio</label>
+                        <input type="text" class="form-control" id="numeroPatrimonio" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descricao</label>
+                        <textarea class="form-control" id="descricao" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="status" required>
+                            <option value="disponivel">Disponivel</option>
+                            <option value="em uso">Em uso</option>
+                            <option value="manutencao">Manutencao</option>
+                            <option value="baixado">Baixado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Localizacao</label>
+                        <input type="text" class="form-control" id="localizacao" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarPatrimonio()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para transferir para leilão -->
+<div class="modal fade" id="modalLeilao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Transferir para Leilão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formLeilao">
+                    <input type="hidden" id="leilaoPatrimonioId">
+                    <div class="mb-3">
+                        <label class="form-label">Estado do Patrimonio *</label>
+                        <select class="form-select" id="estado" required>
+                            <option value="">Selecione o estado</option>
+                            <option value="em boas condições">Em boas condições</option>
+                            <option value="obsoleto">Obsoleto</option>
+                            <option value="com defeito">Com defeito</option>
+                            <option value="desatualizado">Desatualizado</option>
+                            <option value="danificado">Danificado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo do Descarte *</label>
+                        <textarea class="form-control" id="motivoDescarte" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" id="observacoes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="confirmarTransferenciaLeilao()">Transferir para Leilão</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let patrimonioParaLeilao = null;
+
+function transferirLeilao(patrimonioId) {
+    patrimonioParaLeilao = patrimonioId;
+    document.getElementById('leilaoPatrimonioId').value = patrimonioId;
+    document.getElementById('formLeilao').reset();
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalLeilao'));
+    modal.show();
+}
+
+function confirmarTransferenciaLeilao() {
+    const formData = {
+        patrimonio_id: patrimonioParaLeilao,
+        estado: document.getElementById('estado').value,
+        motivo_descarte: document.getElementById('motivoDescarte').value,
+        observacoes: document.getElementById('observacoes').value
+    };
+
+    // Validar campos obrigatórios
+    if (!formData.estado || !formData.motivo_descarte) {
+        alert('Preencha todos os campos obrigatórios (*)');
+        return;
+    }
+
+    fetch('/api/leilao/transferir', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Fechar os modais e recarregar a página
+            const modalLeilao = bootstrap.Modal.getInstance(document.getElementById('modalLeilao'));
+            modalLeilao.hide();
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao transferir para leilão');
+    });
+}
+
+// ... resto das funções existentes (novoPatrimonio, editarPatrimonio, salvarPatrimonio, deletarPatrimonio) ...
+function novoPatrimonio() {
+    document.getElementById('modalTitle').textContent = 'Novo Patrimonio';
+    document.getElementById('formPatrimonio').reset();
+    document.getElementById('patrimonioId').value = '';
+    document.getElementById('numeroPatrimonio').readOnly = false;
+}
+
+function editarPatrimonio(id) {
+    fetch(`/api/patrimonios/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const patrimonio = data.patrimonio;
+                
+                document.getElementById('modalTitle').textContent = 'Editar Patrimonio';
+                document.getElementById('patrimonioId').value = patrimonio.id;
+                document.getElementById('numeroPatrimonio').value = patrimonio.numero_patrimonio;
+                document.getElementById('numeroPatrimonio').readOnly = true;
+                document.getElementById('descricao').value = patrimonio.descricao;
+                document.getElementById('status').value = patrimonio.status;
+                document.getElementById('localizacao').value = patrimonio.localizacao;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalPatrimonio'));
+                modal.show();
+            } else {
+                alert('Erro ao carregar patrimonio: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao carregar patrimonio');
+        });
+}
+
+function salvarPatrimonio() {
+    const patrimonioId = document.getElementById('patrimonioId').value;
+    const formData = {
+        numero_patrimonio: document.getElementById('numeroPatrimonio').value,
+        descricao: document.getElementById('descricao').value,
+        status: document.getElementById('status').value,
+        localizacao: document.getElementById('localizacao').value
+    };
+
+    const url = patrimonioId ? `/api/patrimonios/${patrimonioId}` : '/api/patrimonios';
+    const method = patrimonioId ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalPatrimonio'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao salvar patrimonio');
+    });
+}
+
+function deletarPatrimonio(id) {
+    if (confirm('Tem certeza que deseja excluir este patrimonio?')) {
+        fetch(`/api/patrimonios/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao deletar patrimonio');
+        });
+    }
+}
+
+// Limpar formulários quando modais fecharem
+document.getElementById('modalPatrimonio').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('formPatrimonio').reset();
+    document.getElementById('patrimonioId').value = '';
+    document.getElementById('numeroPatrimonio').readOnly = false;
+});
+
+document.getElementById('modalLeilao').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('formLeilao').reset();
+    patrimonioParaLeilao = null;
+});
+</script>
+{% endblock %}

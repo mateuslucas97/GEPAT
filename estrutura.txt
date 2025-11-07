@@ -1,0 +1,18 @@
+GEPAT/
+├── app.py
+├── database.py
+├── auth.py
+├── models.py
+├── static/
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── script.js
+├── templates/
+│   ├── base.html
+│   ├── login.html
+│   ├── dashboard.html
+│   ├── patrimonios.html
+│   ├── usuarios.html
+│   └── historico.html
+└── requirements.txt
