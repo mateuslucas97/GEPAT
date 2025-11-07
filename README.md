@@ -28,7 +28,7 @@ Execute os arquivos na ordem:
 - sync_users.py
 - app.py
 
-ESTRUTURA DO PROJETO
+# ESTRUTURA DO PROJETO
 
 GEPAT/
 
