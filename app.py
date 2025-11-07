@@ -344,5 +344,14 @@ def toggle_usuario_status(user_id):
         return jsonify({'success': False, 'message': 'Erro ao atualizar status'})
 
 if __name__ == '__main__':
-    print("App GEPAT Multi-Setor iniciando...")
-    app.run(debug=True, host='localhost', port=5000)
+    print("🚀 GEPAT - Sistema de Gestão de Patrimônios")
+    print("📍 Iniciando servidor de produção...")
+    print("🌐 Acessível em: http://10.16.90.70:5000")
+    print("⚙️  Modo: Produção")
+    
+    # Executar em modo produção
+    app.run(
+        host='0.0.0.0',  # OU '10.16.90.70' para IP específico
+        port=5000,
+        debug=False  # IMPORTANTE: False em produção!
+    )

@@ -1,6 +1,6 @@
 class Config:
-    # Configurações comuns
-    SECRET_KEY = 'gepat2024-multisetor'
+    # Configurações comuns - MUDAR PARA UMA CHAVE SEGURA!
+    SECRET_KEY = 'gepat-producao-2024-chave-super-segura-mudar-isso'
     
     # Configurações por setor
     SETORES = {
@@ -8,7 +8,7 @@ class Config:
             'DB_HOST': 'localhost',
             'DB_NAME': 'gepat_db',
             'DB_USER': 'gepat_user',
-            'DB_PASSWORD': 'gepat123',
+            'DB_PASSWORD': 'gepat123',  # ALTERE PARA SUA SENHA
             'DB_PORT': '5432',
             'NOME': 'Setor de TI',
             'COR': 'primary'
@@ -17,7 +17,7 @@ class Config:
             'DB_HOST': 'localhost',
             'DB_NAME': 'gepat_apoio_logistico',
             'DB_USER': 'gepat_user',
-            'DB_PASSWORD': 'gepat123',
+            'DB_PASSWORD': 'gepat123',  # ALTERE PARA SUA SENHA
             'DB_PORT': '5432',
             'NOME': 'Apoio Logístico',
             'COR': 'success'
