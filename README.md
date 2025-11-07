@@ -31,28 +31,51 @@ Execute os arquivos na ordem:
 ESTRUTURA DO PROJETO
 GEPAT/
 ├── app.py
+
 ├── database.py
+
 ├── auth.py
+
 ├── models.py
+
 ├── config.py
+
 ├── create_admin_both.py
+
 ├── init_database.py
+
 ├── sync_users.py
+
 ├── static/
+
 │   ├── css/
+
 │   │   └── style.css
+
 │   └── js/
+
 │       └── script.js
+
 ├── templates/
+
 │   ├── base.html
+
 │   ├── comparação.html
+
 │   ├── login.html
+
 │   ├── dashboard.html
+
 │   ├── patrimonios.html
+
 │   ├── usuarios.html
+
 │   └── historico.html
+
 │   ├── selecionar_setor.html
+
 │   ├── leilão.html
+
 └── requirements.txt
 
 # Sistema de Autenticação
