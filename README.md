@@ -29,7 +29,9 @@ Execute os arquivos na ordem:
 - app.py
 
 ESTRUTURA DO PROJETO
+
 GEPAT/
+
 ├── app.py
 
 ├── database.py
